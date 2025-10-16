@@ -59,3 +59,19 @@ def get_my_latest_fatigue_result(
         "fatigue_grade": grade,
         "created_at": str(record.created_at)
     }
+@router.get("/history", response_model=List[schemas.Record], summary="내 모든 진단 기록 조회")
+def get_my_fatigue_history(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    """
+    현재 로그인된 사용자의 모든 과거 눈 피로도 진단 기록을 시간순으로 반환합니다.
+    """
+    records = db.query(models.EyeFatigueRecord).filter(
+        models.EyeFatigueRecord.user_id == current_user.id
+    ).order_by(models.EyeFatigueRecord.created_at.desc()).all()
+
+    if not records:
+        raise HTTPException(status_code=404, detail="진단 기록을 찾을 수 없습니다.")
+
+    return records

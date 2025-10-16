@@ -51,3 +51,4 @@ def read_root():
     """서버가 살아있는지 확인하는 기본 경로"""
     logger.info("Root path was accessed.")
     return {"message": "Welcome to the Onnoon-Care API"}
+
