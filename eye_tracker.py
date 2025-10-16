@@ -14,7 +14,7 @@ EAR_CONSEC_FRAMES = 3
 GAZE_THRESHOLD_LEFT = 0.40   # << 기존 0.35에서 수정
 GAZE_THRESHOLD_RIGHT = 0.60  # << 기존 0.65에서 수정
 # 분석 주기 (초): 이 시간마다 피로도를 계산하고 출력
-ANALYSIS_PERIOD_SECONDS = 10
+ANALYSIS_PERIOD_SECONDS = 60
 OUTPUT_FILENAME = "fatigue_log.json"
 
 # --- MediaPipe Face Mesh 초기화 ---
