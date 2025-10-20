@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+backend/venv/
+.env
+
+# Flutter
+frontend/build/
+frontend/.metadata
+frontend/.packages

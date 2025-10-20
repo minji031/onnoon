@@ -1,0 +1,42 @@
+name: onnoon_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0' #  'sdk: ^3.7.2' 보다 안정적인 범위로 수정
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 아이콘 팩
+  cupertino_icons: ^1.0.8
+
+  # --- 우리가 사용하는 모든 패키지 목록 ---
+  # (✨ 오타 수정 및 누락된 패키지 추가)
+  http: ^1.5.0                     # API 통신용
+  flutter_secure_storage: ^9.0.0     # 토큰 저장용
+  shared_preferences: ^2.2.2       # 간단한 설정 저장용 (shard -> shared 오타 수정)
+  fl_chart: ^0.64.0                  # 차트/그래프용
+  url_launcher: ^6.2.1               # 외부 링크 열기용
+  percent_indicator: ^4.2.3          # 퍼센트 게이지용 (버전 업데이트)
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0 # 버전 업데이트
+
+flutter:
+  uses-material-design: true
+
+  # (✨ 들여쓰기 오류 수정)
+  assets:
+    - assets/images/
+
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf

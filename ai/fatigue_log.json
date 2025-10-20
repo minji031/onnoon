@@ -1,0 +1,51 @@
+[
+    {
+        "timestamp": "2025-10-16 21:38:54",
+        "bpm": 7,
+        "max_focus_time": 0,
+        "fatigue_score": 35.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:39:18",
+        "bpm": 0,
+        "max_focus_time": 0,
+        "fatigue_score": 50.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:39:28",
+        "bpm": 10,
+        "max_focus_time": 0,
+        "fatigue_score": 35.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:39:38",
+        "bpm": 0,
+        "max_focus_time": 0,
+        "fatigue_score": 50.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:39:48",
+        "bpm": 10,
+        "max_focus_time": 0,
+        "fatigue_score": 35.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:39:58",
+        "bpm": 12,
+        "max_focus_time": 0,
+        "fatigue_score": 15.0,
+        "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-16 21:40:08",
+        "bpm": 6,
+        "max_focus_time": 0,
+        "fatigue_score": 35.0,
+        "fatigue_status": "양호함 😊"
+    }
+]
