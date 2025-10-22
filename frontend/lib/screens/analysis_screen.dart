@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 /// 분석 결과 데이터 모델
 class AnalysisResult {
-  final int score;              // 0~100
+  final int score;               // 0~100
   final double blinkInterval;   // 초
   final int focusHoldSeconds;   // 초
   final Duration totalAnalysis; // 총 분석 시간
@@ -13,10 +16,117 @@ class AnalysisResult {
     required this.focusHoldSeconds,
     required this.totalAnalysis,
   });
+
+  // API 응답(JSON)을 AnalysisResult 모델로 변환하는 팩토리 생성자
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
+    // API 응답 필드 이름이 다를 수 있으므로 확인 필요
+    return AnalysisResult(
+      score: json['score'] ?? 0,
+      blinkInterval: (json['blink_interval'] ?? 0.0).toDouble(),
+      focusHoldSeconds: json['focus_hold_seconds'] ?? 0,
+      totalAnalysis: Duration(seconds: json['total_analysis_duration'] ?? 0),
+    );
+  }
 }
 
-class AnalysisScreen extends StatelessWidget {
-  const AnalysisScreen({super.key}); // ✅ const 생성자
+// StatefulWidget으로 변경
+class AnalysisScreen extends StatefulWidget {
+  final String? recordId;
+  const AnalysisScreen({super.key, this.recordId});
+
+  @override
+  State<AnalysisScreen> createState() => _AnalysisScreenState();
+}
+
+class _AnalysisScreenState extends State<AnalysisScreen> {
+  final storage = const FlutterSecureStorage();
+  AnalysisResult? _result; // API에서 받아올 결과 데이터
+  bool _isLoading = true; // 로딩 상태
+  String? _errorMessage; // 오류 메시지
+
+  @override
+  void initState() {
+    super.initState();
+    print('넘어온 ID: ${widget.recordId}');
+    _fetchSpecificAnalysisData(widget.recordId);
+  }
+
+  // Part 4의 API 호출 로직
+  Future<void> _fetchSpecificAnalysisData(String? recordId) async {
+    if (recordId == null) {
+      // ID가 없으면 오류 처리 또는 뒤로가기
+      setState(() {
+        _errorMessage = '잘못된 접근입니다.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // 1. 토큰 읽어오기
+    String? token = await storage.read(key: 'jwt_token');
+
+    if (token == null) {
+      // 토큰이 없으면 로그인 화면으로 이동
+      if (!mounted) return;
+      // 현재 context가 유효한지 확인 후 이동
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+           Navigator.pushReplacementNamed(context, '/login');
+        }
+      });
+      return;
+    }
+
+    // 2. API 호출
+    try {
+      // TODO: API 문서에 나온 '눈 피로도 분석' 엔드포인트로 수정하세요.
+      final url = Uri.parse('https://onnoon.onrender.com/api/fatigue/$recordId');
+
+      final response = await http.get(
+        url,
+        // 3. 헤더에 토큰 포함!
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // 성공
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          // TODO: API 응답 JSON 구조에 맞게 fromJson을 수정해야 합니다.
+          _result = AnalysisResult.fromJson(data);
+          _isLoading = false;
+        });
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        // 인증 실패 (토큰 만료 등) -> 로그인 화면으로
+        await storage.delete(key: 'jwt_token');
+         // 현재 context가 유효한지 확인 후 이동
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+        });
+      } else {
+        // 기타 서버 오류
+        setState(() {
+          _errorMessage = '데이터를 불러오는데 실패했습니다. (서버 오류 ${response.statusCode})';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // 네트워크 오류 등
+       if (mounted) {
+        setState(() {
+          _errorMessage = '서버에 연결할 수 없습니다.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   (String, Color) _statusOf(int score) {
     if (score >= 80) return ('매우 좋음', const Color(0xFF12B886));
@@ -42,13 +152,36 @@ class AnalysisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: 실제 데이터로 치환하거나 arguments로 전달받기
-    const result = AnalysisResult(
-      score: 67,
-      blinkInterval: 0.7,
-      focusHoldSeconds: 14,
-      totalAnalysis: Duration(minutes: 3),
-    );
+    // 로딩 및 오류 상태 처리
+    if (_isLoading) {
+      return Scaffold(
+        appBar: _buildAppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: _buildAppBar(),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(_errorMessage!, textAlign: TextAlign.center),
+          ),
+        ),
+      );
+    }
+
+    if (_result == null) {
+      // 이 경우는 거의 없지만, 안전을 위해
+      return Scaffold(
+        appBar: _buildAppBar(),
+        body: const Center(child: Text('데이터가 없습니다.')),
+      );
+    }
+
+    // 'result' 변수가 API에서 온 '_result'를 사용하도록 변경
+    final result = _result!;
 
     final (statusText, statusColor) = _statusOf(result.score);
     final size = MediaQuery.of(context).size;
@@ -56,13 +189,7 @@ class AnalysisScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('눈 건강 분석 결과'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF5A6AFF),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: _buildAppBar(), // AppBar를 별도 함수로 분리
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
@@ -143,7 +270,7 @@ class AnalysisScreen extends StatelessWidget {
                     _adviceText(result.score),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -158,7 +285,7 @@ class AnalysisScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: const Text('다시 진단하기',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -170,6 +297,7 @@ class AnalysisScreen extends StatelessWidget {
             _MetricCard(
               leadingColor: const Color(0xFF5A6AFF),
               title: '깜빡임 속도',
+              // --- ✅ 1. 수정: 이름 있는 인자로 올바르게 전달 ---
               value: '${result.blinkInterval.toStringAsFixed(1)}초 간격',
               icon: Icons.remove_red_eye_outlined,
             ),
@@ -198,6 +326,17 @@ class AnalysisScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // 로딩/오류 시에도 AppBar를 보여주기 위해 헬퍼 함수로 분리
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: const Text('눈 건강 분석 결과'),
+      centerTitle: true,
+      backgroundColor: const Color(0xFF5A6AFF),
+      foregroundColor: Colors.white,
+      elevation: 0,
     );
   }
 }
@@ -284,7 +423,7 @@ class _AdviceBanner extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 16, color: Color(0xFF111111), fontWeight: FontWeight.w600),
+                  fontSize: 16, color: Color(0xFF111111), fontWeight: FontWeight.w600),
             ),
           ),
         ],

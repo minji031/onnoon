@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // --- 1. 수정: 임포트 추가 ---
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -9,10 +10,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notif = true;           // 알림
-  bool _marketing = false;      // 마케팅 알림
-  bool _darkMode = false;       // 다크모드(앱 전역 적용은 하단 참고)
-  double _textScale = 1.0;      // 글자 크기 배율
+  // --- 2. 수정: storage 변수 추가 ---
+  final storage = const FlutterSecureStorage();
+  // ---------------------------------
+
+  bool _notif = true;         // 알림
+  bool _marketing = false;    // 마케팅 알림
+  bool _darkMode = false;     // 다크모드
+  double _textScale = 1.0;    // 글자 크기 배율
   String _language = '한국어';    // 언어
 
   @override
@@ -23,13 +28,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final p = await SharedPreferences.getInstance();
-    setState(() {
-      _notif     = p.getBool('notif') ?? true;
-      _marketing = p.getBool('marketing') ?? false;
-      _darkMode  = p.getBool('darkMode') ?? false;
-      _textScale = p.getDouble('textScale') ?? 1.0;
-      _language  = p.getString('language') ?? '한국어';
-    });
+    // initState에서 setState 호출 시 mounted 확인 (안전 조치)
+    if (mounted) {
+      setState(() {
+        _notif     = p.getBool('notif') ?? true;
+        _marketing = p.getBool('marketing') ?? false;
+        _darkMode  = p.getBool('darkMode') ?? false;
+        _textScale = p.getDouble('textScale') ?? 1.0;
+        _language  = p.getString('language') ?? '한국어';
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -41,13 +49,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await p.setString('language', _language);
   }
 
+  // --- 3. 수정: 로그아웃 함수 추가 ---
+  void _logout() async {
+    await storage.delete(key: 'jwt_token'); // 토큰 삭제
+
+    if (!mounted) return;
+    // 로그아웃 후 로그인 화면으로 이동 (현재 화면을 스택에서 제거하고 이동)
+    // 앱의 모든 이전 경로를 제거하고 로그인 화면만 남김
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+  // ----------------------------------
+
   void _toast(String msg) {
+    if (!mounted) return; // async gap 이후 context 사용 전 확인
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('설정'),
         centerTitle: true,
@@ -87,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (v) async {
               setState(() => _darkMode = v);
               await _save();
-              _toast('다크 모드를 적용하려면 앱 테마와 연결 필요(아래 안내 참고)');
+              _toast('다크 모드를 적용하려면 앱 테마와 연결 필요');
             },
           ),
           ListTile(
@@ -143,6 +164,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('데이터 내보내기'),
             onTap: () => _toast('CSV/JSON로 내보내기 구현 연결'),
           ),
+
+          // --- 4. 수정: 로그아웃 버튼 추가 ---
+          ListTile(
+            leading: const Icon(Icons.logout), // 로그아웃 아이콘
+            title: const Text('로그아웃'),
+            onTap: _logout, // 탭하면 _logout 함수 실행
+          ),
+          // ----------------------------------
+
           ListTile(
             leading: const Icon(Icons.delete_forever_outlined, color: Colors.red),
             title: const Text('계정 삭제'),
@@ -157,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                       child: const Text('삭제'),
                     ),
                   ],
@@ -176,9 +206,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+// _SectionHeader, _LangSheet 클래스는 변경 없음
 class _SectionHeader extends StatelessWidget {
   final String text;
-  const _SectionHeader(this.text);
+  const _SectionHeader(this.text, {super.key}); // Key 추가
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +222,7 @@ class _SectionHeader extends StatelessWidget {
 
 class _LangSheet extends StatelessWidget {
   final String current;
-  const _LangSheet({required this.current});
+  const _LangSheet({required this.current, super.key}); // Key 추가
 
   @override
   Widget build(BuildContext context) {

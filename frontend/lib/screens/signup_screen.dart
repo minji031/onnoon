@@ -18,7 +18,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  // TODO: 실제 앱에서는 UI에 이름 입력 필드를 추가하고 이 컨트롤러를 연결해야 합니다.
+  // UI에 이름 입력 필드를 추가하고 이 컨트롤러를 연결해야 합니다. (현재는 이메일 페이지에서만 임시 사용)
   final _nameController = TextEditingController();
 
   // 약관 동의 상태
@@ -44,7 +44,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.addListener(_validatePassword);
     _confirmPasswordController.addListener(_validatePassword);
   }
-  
+
   // 다음 페이지로 이동
   void _nextPage() {
     if (_pageController.page! < 2) {
@@ -100,28 +100,30 @@ class _SignupScreenState extends State<SignupScreen> {
   void _handleSignup() async {
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
-    // TODO: 현재는 이름이 하드코딩되어 있습니다. UI에 이름 입력 필드를 추가해야 합니다.
-    final String name = _nameController.text.isNotEmpty ? _nameController.text.trim() : "홍길동";
+    // TODO: UI에 이름 입력 필드를 추가하고 _nameController를 연결해야 합니다. 현재는 임시값 사용.
+    final String name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "사용자";
 
-    final url = Uri.parse('http://127.0.0.1:8000/users/');
+    // --- 1. 수정: API 경로를 가이드에 맞게 변경 ---
+    final url = Uri.parse('https://onnoon.onrender.com/api/auth/register');
 
     try {
       final response = await http.post(
         url,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=UTF-8',
         },
+        // --- 2. 수정: 요청 본문에 name, email, password 포함 ---
         body: jsonEncode({
           'name': name,
           'email': email,
-          // ⚠️ 중요: 백엔드 API가 password를 받도록 수정되어야 합니다.
-          // 'password': password,
+          'password': password,
         }),
       );
-      
+
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
+      // 성공 코드는 201 (Created)로 가정 (가이드에는 명시되지 않았지만 일반적)
+      if (response.statusCode == 201) {
         // 성공 시
         Navigator.of(context).pop(); // 로그인 화면으로 이동
         ScaffoldMessenger.of(context).showSnackBar(
@@ -191,7 +193,7 @@ class _SignupScreenState extends State<SignupScreen> {
               },
               children: [
                 _buildTermsPage(),
-                _buildEmailPage(),
+                _buildEmailPage(), // 이름 입력 필드는 여기에 추가하는 것이 자연스러움
                 _buildPasswordPage(),
               ],
             ),
@@ -265,10 +267,12 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // 2. 이메일 입력 페이지
+  // 2. 이메일 입력 페이지 (+이름 입력 추가 필요)
   Widget _buildEmailPage() {
     final email = _emailController.text;
     bool isEmailValid = email.contains('@') && email.contains('.');
+    // TODO: 이름 입력도 유효성 검사에 포함시켜야 합니다.
+    bool canGoNext = isEmailValid; // && _nameController.text.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -286,15 +290,20 @@ class _SignupScreenState extends State<SignupScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          // TODO: 여기에 이름 입력 필드를 추가할 수 있습니다.
-          // const SizedBox(height: 16),
-          // TextField(
-          //   controller: _nameController,
-          //   ...
-          // ),
+          // --- ⚠️ UI 수정 필요: 이름 입력 필드 추가 ---
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            keyboardType: TextInputType.name,
+            decoration: const InputDecoration(
+              labelText: '이름',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          // ------------------------------------
           const Spacer(),
           ElevatedButton(
-            onPressed: isEmailValid ? _nextPage : null,
+            onPressed: canGoNext ? _nextPage : null,
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
               backgroundColor: const Color(0xFF2F43FF),

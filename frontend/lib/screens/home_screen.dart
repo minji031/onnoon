@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 홈 화면
 class HomeScreen extends StatefulWidget {
@@ -13,7 +14,31 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>(); // ← Drawer 열기용 키
   int currentFatigueScore = 87;
 
+  // --- 1. 수정: storage 인스턴스 생성 ---
+  final storage = const FlutterSecureStorage();
+  
+  // _isLoggedIn 변수는 이미 있습니다.
   bool _isLoggedIn = false;
+
+  // --- 2. 수정: initState 및 로그인 확인 로직 추가 ---
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() async {
+    // storage에서 'jwt_token'을 읽어옵니다.
+    String? token = await storage.read(key: 'jwt_token');
+
+    // 토큰이 존재하면 (null이 아니면)
+    if (token != null) {
+      setState(() {
+        _isLoggedIn = true; // 로그인 상태를 true로 변경
+      });
+    }
+  }
+  // -------------------------------------------
 
   String _statusMsg(int score) {
     if (score >= 80) return '눈 상태가 매우 좋아요! 😄';
@@ -23,12 +48,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openMenu() => _scaffoldKey.currentState?.openEndDrawer();
 
+  // --- 3. 수정: 로그아웃 함수 추가 ---
+  void _logout() async {
+    await storage.delete(key: 'jwt_token'); // 토큰 삭제
+    setState(() {
+      _isLoggedIn = false; // 로그인 상태를 false로 변경
+    });
+    
+    if (!mounted) return;
+    // (선택) 로그아웃 후 로그인 화면으로 이동
+    if (_scaffoldKey.currentState?.isEndDrawerOpen ?? false) {
+      Navigator.pop(context); // Drawer 닫기
+    }
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+  // ----------------------------------
+
   Future<void> _go(String route) async {
     if(_scaffoldKey.currentState?.isEndDrawerOpen ?? false) {
       Navigator.pop(context); // Drawer 닫기
       await Future.delayed(const Duration(milliseconds: 150)); // 닫힘 애니 잠깐 대기(부드럽게)
     }
     if (!mounted) return;
+    
+    // 이미 홈 화면인데 홈으로 또 이동하는 것을 방지
+    if (route == '/' && ModalRoute.of(context)?.settings.name == '/') {
+      return; 
+    }
     Navigator.pushNamed(context, route);
   }
 
@@ -41,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey, // ← 연결
       backgroundColor: Colors.white,
       appBar: AppBar(
+        // ... (AppBar 코드는 동일) ...
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         elevation: 0,
@@ -92,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       endDrawer: _AppMenuDrawer(
         isLoggedIn: _isLoggedIn,
         onGoLogin: () => _go('/login'),
+        onLogout: _logout, // --- 4. 수정: 로그아웃 함수 전달 ---
         onGoHome:   () => _go('/'),
         onGoGuide:  () => _go('/guide'),
         onGoStats:  () => _go('/records'),     // 네가 쓰는 "기록/그래프" 경로
@@ -101,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       body: SafeArea(
+        // ... (Body 코드는 동일) ...
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -123,6 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ... (모든 _build... 위젯 함수는 동일) ...
   Widget _buildMainFatigueSection(double screenW) {
     final ring = screenW * 0.55;
     return Column(
@@ -191,10 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         InkWell(
-          onTap: () {
-            // 예: 기록 화면으로 이동
-            // Navigator.pushNamed(context, '/records');
-          },
+          onTap: () => _go('/records'),
           child: Container(
             width: 32,
             height: 32,
@@ -298,10 +345,10 @@ class _SectionDivider extends StatelessWidget {
 
 /// 앱 공용 메뉴 드로어
 class _AppMenuDrawer extends StatelessWidget {
-  // 1. 로그인 상태와 로그인 화면으로 이동할 함수를 전달받을 변수 추가
   final bool isLoggedIn;
   final VoidCallback onGoLogin;
-  
+  final VoidCallback onLogout; // --- 5. 수정: onLogout 변수 추가 ---
+
   final VoidCallback onGoHome;
   final VoidCallback onGoGuide;
   final VoidCallback onGoStats;
@@ -309,10 +356,11 @@ class _AppMenuDrawer extends StatelessWidget {
   final VoidCallback onGoDiagnosis;
   final VoidCallback onGoSettings;
 
-  // 2. 생성자 수정
+  // 생성자 수정
   const _AppMenuDrawer({
     required this.isLoggedIn,
     required this.onGoLogin,
+    required this.onLogout, // --- 5. 수정: onLogout을 required로 추가 ---
     required this.onGoHome,
     required this.onGoGuide,
     required this.onGoStats,
@@ -330,7 +378,6 @@ class _AppMenuDrawer extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 12),
           children: [
-            // 3. 로그인 상태에 따라 다른 위젯을 보여주는 부분 추가
             isLoggedIn ? _buildProfileSection() : _buildLoginSection(),
             const Divider(),
             ListTile(
@@ -363,14 +410,25 @@ class _AppMenuDrawer extends StatelessWidget {
               title: const Text('설정'),
               onTap: onGoSettings,
             ),
+            // --- 6. 수정: 로그인 상태일 때 로그아웃 버튼 표시 ---
+            if (isLoggedIn) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('로그아웃'),
+                onTap: onLogout,
+              ),
+            ]
+            // ------------------------------------------
           ],
         ),
       ),
     );
   }
 
-  // 로그인되지 않았을 때 보여줄 위젯 (이미지와 유사하게)
+  // 로그인되지 않았을 때 보여줄 위젯
   Widget _buildLoginSection() {
+    // ... (코드는 동일) ...
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       child: Column(
@@ -409,8 +467,9 @@ class _AppMenuDrawer extends StatelessWidget {
     );
   }
 
-  // 로그인되었을 때 보여줄 위젯 (추후 확장용)
+  // 로그인되었을 때 보여줄 위젯 (프로필)
   Widget _buildProfileSection() {
+    // ... (코드는 동일) ...
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       child: Row(
@@ -428,11 +487,11 @@ class _AppMenuDrawer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '온눈님',
+                '온눈님', // TODO: 추후 토큰에서 사용자 이름 파싱
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Text(
-                'eunsu@onnoon.com',
+                '로그인되었습니다.', // TODO: 추후 토큰에서 이메일 파싱
                 style: TextStyle(color: Colors.grey[600]),
               ),
             ],
