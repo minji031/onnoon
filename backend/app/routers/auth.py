@@ -3,7 +3,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from .. import database, schemas, models, security
 
-router = APIRouter(tags=['Authentication'])
+router = APIRouter(
+    prefix="/api/auth",
+    tags=['Authentication']
+)
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
