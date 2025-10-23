@@ -47,5 +47,26 @@
         "max_focus_time": 0,
         "fatigue_score": 35.0,
         "fatigue_status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-23 18:54:40",
+        "bpm": 54,
+        "max_stable_gaze_time": 7.35,
+        "health_score": 95.1,
+        "status": "양호함 😊"
+    },
+    {
+        "timestamp": "2025-10-23 18:56:38",
+        "bpm": 14,
+        "max_stable_gaze_time": 20.31,
+        "health_score": 54.5,
+        "status": "주의 필요 😐"
+    },
+    {
+        "timestamp": "2025-10-23 18:58:49",
+        "bpm": 54,
+        "max_stable_gaze_time": 13.24,
+        "health_score": 91.2,
+        "status": "양호함 😊"
     }
 ]
