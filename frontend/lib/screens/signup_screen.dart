@@ -270,31 +270,34 @@ class _SignupScreenState extends State<SignupScreen> {
   // 2. 이메일 입력 페이지 (+이름 입력 추가 필요)
   Widget _buildEmailPage() {
     final email = _emailController.text;
+    final name = _nameController.text;
+
     bool isEmailValid = email.contains('@') && email.contains('.');
-    // TODO: 이름 입력도 유효성 검사에 포함시켜야 합니다.
-    bool canGoNext = isEmailValid; // && _nameController.text.isNotEmpty;
+    bool isNameValid = name.trim().isNotEmpty;
+    bool canGoNext = isEmailValid && isNameValid; 
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('로그인에 사용할\n아이디를 입력해주세요.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text('아이디를 입력해주세요.', 
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            autofocus: true,
+            // autofocus: true,
             decoration: const InputDecoration(
               labelText: '이메일 (아이디)',
               border: OutlineInputBorder(),
             ),
           ),
-          // --- ⚠️ UI 수정 필요: 이름 입력 필드 추가 ---
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
             keyboardType: TextInputType.name,
+            autofocus: true,
             decoration: const InputDecoration(
               labelText: '이름',
               border: OutlineInputBorder(),
