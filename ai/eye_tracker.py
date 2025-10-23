@@ -4,6 +4,19 @@ import time
 import math
 import json  # << JSON 라이브러리 추가
 from datetime import datetime  # << 시간 기록을 위한 라이브러리 추가
+import requests  # 👈 1. 통신 장비(requests) 불러오기
+
+
+# --- 2. 서버 정보 및 로그인 계정 설정 ---
+# ❗️ 백엔드 팀에게 Render 서버의 정확한 주소를 물어보고 채워넣으세요
+BASE_URL = "https://onnoon.onrender.com"  # 예시 주소입니다. 실제 주소로 바꿔야 합니다.
+LOGIN_URL = f"{BASE_URL}/login"
+FATIGUE_API_URL = f"{BASE_URL}/api/fatigue/"
+
+# ❗️ 테스트할 계정 정보 입력 (seed.py를 실행했다면 기본 비번은 password123)
+TEST_USER_EMAIL = "test@example.com"  # << 본인 테스트용 이메일로 변경
+TEST_USER_PASSWORD = "password123"
+
 
 # --- 설정값 (튜닝을 위해 이 값을 조정하세요) ---
 # EAR 임계값: 이 값보다 작아지면 눈을 감은 것으로 판단
@@ -40,7 +53,7 @@ class EyeFatigueMonitor:
     - 눈 깜빡임, 초점 시간 등을 측정하여 피로도 점수를 계산합니다.
     """
 
-    def __init__(self, ear_threshold, analysis_period):
+    def __init__(self):
         """모니터 초기화"""
         # 데이터 누적 변수
         self.blink_count = 0
@@ -51,6 +64,7 @@ class EyeFatigueMonitor:
         self.last_gaze_direction = "CENTER"
         self.stable_gaze_start_time = time.time()
         self.analysis_start_time = time.time()
+        self.jwt_token = None  # 👈 로그인 후 받은 JWT 토큰을 저장할 변수 추가
 
     def _euclidean(self, p1, p2):
         """두 점 사이의 유클리드 거리를 계산합니다."""
@@ -117,9 +131,11 @@ class EyeFatigueMonitor:
                 cv2.putText(frame, f"Gaze Pos: {relative_iris_pos:.2f}", (30, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
                 cv2.putText(frame, f"Gaze: {gaze_direction_latest}", (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
         
+
+        
         # 주기적으로 피로도 분석 실행
         self._run_analysis()
-
+    
                 
 
     def _run_analysis(self):
@@ -135,25 +151,19 @@ class EyeFatigueMonitor:
             print(f"분당 깜빡임 (BPM): {bpm} 회")
             print(f"최대 시선 고정 시간: {max_stable_gaze_time:.2f} 초")
 
-            # --- 1. 지표별 건강 점수 산출 (점수가 높을수록 좋음) ---
-            
-            # A. 깜빡임 건강 점수 (0~30회 범위를 0~100점으로 변환)
-            # 30회 이상 깜빡이면 만점(100점), 0회면 0점
+            # --- 1. 지표별 건강 점수 산출 ---
             blink_score = (bpm / 30) * 100
-            if blink_score > 100:  # 100점을 넘지 않도록 제한
+            if blink_score > 100:
                 blink_score = 100
 
-            # B. 시선 고정 건강 점수 (0~60초 범위를 100~0점으로 변환)
-            # 시선 고정 시간이 0초에 가까울수록 만점(100점), 60초 이상이면 0점
             gaze_score = (1 - (max_stable_gaze_time / 60)) * 100
-            if gaze_score < 0:  # 0점 밑으로 내려가지 않도록 제한
+            if gaze_score < 0:
                 gaze_score = 0
             
             # --- 2. 최종 건강 점수 계산 ---
-            # 가중치: 깜빡임 60%, 시선 고정 40%
             total_health_score = (blink_score * 0.6) + (gaze_score * 0.4)
             
-            # --- 3. 결과 해석 (점수가 높을수록 긍정적) ---
+            # --- 3. 결과 해석 ---
             fatigue_status = "매우 나쁨 😵"
             if total_health_score > 70:
                 fatigue_status = "양호함 😊"
@@ -164,28 +174,59 @@ class EyeFatigueMonitor:
             print(f"현재 눈 상태: {fatigue_status}")
             print("--------------------------\n")
 
-            # --- 4. JSON 로그 저장 ---
-            self._save_log({
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # --- 4. 전송할 데이터 준비 ---
+            # 👇 바로 이 부분이 빠져있었습니다!
+            log_data = {
                 "bpm": bpm,
                 "max_stable_gaze_time": round(max_stable_gaze_time, 2),
-                "health_score": round(total_health_score, 1), # 'fatigue_score' -> 'health_score'
+                "health_score": round(total_health_score, 1),
                 "status": fatigue_status
-            })
+            }
 
-            # --- 5. 다음 분석을 위해 변수 초기화 ---
+            # --- 5. 백엔드 서버로 데이터 전송 ---
+            # (이제 _save_log는 사용하지 않습니다.)
+            self._send_to_backend(log_data)
+
+            # --- 6. 다음 분석을 위해 변수 초기화 ---
             self._reset_analysis_variables()
 
-    def _save_log(self, new_log_data):
-        """분석 결과를 JSON 파일에 추가하여 저장합니다."""
+
+    def _get_jwt_token(self):
+        """서버에 로그인하여 JWT 토큰을 받아옵니다."""
         try:
-            with open(OUTPUT_FILENAME, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
-        except FileNotFoundError:
-            logs = []
-        logs.append(new_log_data)
-        with open(OUTPUT_FILENAME, 'w', encoding='utf-8') as f:
-            json.dump(logs, f, ensure_ascii=False, indent=4)
+            # FastAPI의 로그인 형식에 맞춰 아이디와 비밀번호를 보냅니다.
+            login_data = {"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD}
+            response = requests.post(LOGIN_URL, data=login_data)
+
+            if response.status_code == 200:
+                print(">> 로그인 성공! JWT 토큰을 발급받았습니다.")
+                # 성공 시, 받은 토큰을 클래스 변수에 저장합니다.
+                self.jwt_token = response.json().get("access_token")
+                return True
+            else:
+                print(f">> 로그인 실패: {response.status_code} - {response.text}")
+                return False
+        except requests.exceptions.RequestException as e:
+            print(f">> 서버 연결 오류 (로그인): {e}")
+            return False
+
+    def _send_to_backend(self, data_to_send): # 👈 데이터를 'data_to_send'로 받습니다.
+        """분석 결과를 백엔드 서버로 전송합니다."""
+        if not self.jwt_token:
+            print(">> 경고: JWT 토큰이 없어 서버로 전송할 수 없습니다.")
+            return
+
+        headers = {"Authorization": f"Bearer {self.jwt_token}"}
+        try:
+            # 👈 여기서 log_data 대신 data_to_send를 사용해야 합니다.
+            response = requests.post(FATIGUE_API_URL, json=data_to_send, headers=headers)
+
+            if response.status_code == 200:
+                print(">> 서버로 분석 결과 전송 성공!")
+            else:
+                print(f">> 서버 전송 실패: {response.status_code} - {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f">> 서버 연결 오류: {e}")
 
     def _reset_analysis_variables(self):
         """다음 분석을 위해 변수를 초기화합니다."""
@@ -196,22 +237,27 @@ class EyeFatigueMonitor:
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture(0)
-    monitor = EyeFatigueMonitor(ear_threshold=EAR_THRESHOLD, analysis_period=ANALYSIS_PERIOD_SECONDS)
+    monitor = EyeFatigueMonitor()
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frame = cv2.flip(frame, 1)
+    print("AI 분석을 시작합니다. 먼저 서버에 로그인을 시도합니다...")
+    login_successful = monitor._get_jwt_token() # 프로그램 시작 시 딱 한 번 로그인
 
-        # 프레임 처리 및 눈 상태 업데이트
-        monitor.process_frame(frame)
-        
+    if login_successful:
+        print("로그인 성공! 실시간 눈 피로 분석을 시작합니다. (종료: 'q' 키)")
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.flip(frame, 1)
 
-        # 화면에 프레임 표시
-        cv2.imshow("Eye Fatigue Monitor", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            # 이 함수가 내부적으로 분석, 결과 출력, 서버 전송까지 모두 처리합니다.
+            monitor.process_frame(frame)
+
+            cv2.imshow("Eye Fatigue Monitor", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+    else:
+        print("로그인에 실패하여 프로그램을 종료합니다. 서버 주소와 계정 정보를 확인하세요.")
 
     cap.release()
     cv2.destroyAllWindows()
