@@ -103,7 +103,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // TODO: UI에 이름 입력 필드를 추가하고 _nameController를 연결해야 합니다. 현재는 임시값 사용.
     final String name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "사용자";
 
-    // --- 1. 수정: API 경로를 가이드에 맞게 변경 ---
+    // --- 1. API 경로를 가이드에 맞게 변경 ---
     final url = Uri.parse('https://onnoon.onrender.com/api/auth/register');
 
     try {
@@ -112,7 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        // --- 2. 수정: 요청 본문에 name, email, password 포함 ---
+        // --- 2. 요청 본문에 name, email, password 포함 ---
         body: jsonEncode({
           'name': name,
           'email': email,
