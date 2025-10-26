@@ -1,7 +1,7 @@
 # app/schemas.py
 
 from pydantic import BaseModel, EmailStr
-from datetime import datetime  # 1. datetime 임포트 추가
+from datetime import datetime
 
 # --- 사용자 및 인증 관련 스키마 ---
 class UserCreate(BaseModel):
@@ -13,9 +13,9 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     name: str
-    
+
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
@@ -34,9 +34,12 @@ class FatigueResult(BaseModel):
     user_id: int
     fatigue_score: float
     fatigue_grade: str
-    created_at: datetime  # 2. str -> datetime 타입으로 통일
+    created_at: datetime
 
-# 3. 들여쓰기 수정: FatigueResult 클래스 밖으로 빼냈습니다.
+    # 👇 [수정] Config 클래스를 여기에 추가합니다!
+    class Config:
+        from_attributes = True
+
 class Record(BaseModel):
     """과거 진단 기록 전체를 조회하기 위한 응답 스키마"""
     id: int
@@ -46,6 +49,7 @@ class Record(BaseModel):
     iris_dilation: float
     eye_movement_pattern: str
     created_at: datetime
+    status: str | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
