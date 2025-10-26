@@ -41,6 +41,7 @@ class _SignupScreenState extends State<SignupScreen> {
     super.initState();
     // 컨트롤러에 리스너를 추가하여 텍스트 변경을 감지
     _emailController.addListener(() => setState(() {}));
+    _nameController.addListener(() => setState(() {}));
     _passwordController.addListener(_validatePassword);
     _confirmPasswordController.addListener(_validatePassword);
   }

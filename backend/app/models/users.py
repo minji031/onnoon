@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from ..database import Base
+# database.py 파일이 models 폴더 밖에 app 폴더에 있으므로 ..database 가 맞습니다.
+from ..database import Base 
 
 class User(Base):
     __tablename__ = "users"
@@ -9,7 +10,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     email = Column(String(120), unique=True, index=True, nullable=False)
-    # 👈 1. 로그인 기능을 위한 비밀번호 필드 추가
     hashed_password = Column(String, nullable=False) 
 
     records = relationship("EyeFatigueRecord", back_populates="owner")
@@ -19,15 +19,17 @@ class EyeFatigueRecord(Base):
     __tablename__ = "eye_fatigue_records"
 
     id = Column(Integer, primary_key=True, index=True)
-    # 👈 2. User 테이블과 관계 설정
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
-    # 👈 3. 오류를 해결하기 위한 fatigue_score 필드 추가
     fatigue_score = Column(Float, nullable=True) 
     
-    blink_speed = Column(Float)
-    iris_dilation = Column(Float)
-    eye_movement_pattern = Column(String(50))
+    # 👇 [추가] 프론트엔드 연동을 위한 'status' 컬럼
+    status = Column(String(50), nullable=True) 
+    
+    # (다른 컬럼들은 nullable=True로 변경하여 유연성을 높였습니다)
+    blink_speed = Column(Float, nullable=True)
+    iris_dilation = Column(Float, nullable=True)
+    eye_movement_pattern = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="records")
