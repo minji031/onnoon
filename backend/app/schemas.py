@@ -15,7 +15,6 @@ class UserResponse(BaseModel):
     name: str
 
     class Config:
-        # 👇 [수정] Pydantic V2 호환을 위해 orm_mode 대신 사용
         from_attributes = True
 
 class Token(BaseModel):
@@ -37,6 +36,10 @@ class FatigueResult(BaseModel):
     fatigue_grade: str
     created_at: datetime
 
+    # 👇 [수정] Config 클래스를 여기에 추가합니다!
+    class Config:
+        from_attributes = True
+
 class Record(BaseModel):
     """과거 진단 기록 전체를 조회하기 위한 응답 스키마"""
     id: int
@@ -49,5 +52,4 @@ class Record(BaseModel):
     status: str | None = None
 
     class Config:
-        # 👇 [수정] Pydantic V2 호환을 위해 orm_mode 대신 사용
         from_attributes = True
