@@ -27,7 +27,7 @@ class EyeFatigueRecord(Base):
     status = Column(String(50), nullable=True) 
     
     # (다른 컬럼들은 nullable=True로 변경하여 유연성을 높였습니다)
-    blink_speed = Column(Float, nullable=True)
+    blink_speed = Column(Float, nullable=True)ㅎ
     iris_dilation = Column(Float, nullable=True)
     eye_movement_pattern = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
