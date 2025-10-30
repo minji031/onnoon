@@ -15,6 +15,7 @@ class UserResponse(BaseModel):
     name: str
 
     class Config:
+        # Pydantic V2 호환을 위해 orm_mode 대신 사용
         from_attributes = True
 
 class Token(BaseModel):
@@ -36,7 +37,7 @@ class FatigueResult(BaseModel):
     fatigue_grade: str
     created_at: datetime
 
-    # 👇 [수정] Config 클래스를 여기에 추가합니다!
+    # 👇 [수정] 500 오류 해결을 위해 Config 클래스를 추가합니다!
     class Config:
         from_attributes = True
 
