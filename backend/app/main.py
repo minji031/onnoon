@@ -41,10 +41,13 @@ app.add_middleware(
 
 # --- 라우터 포함 ---
 # '/register', '/login' 등의 API가 포함된 auth.py 라우터를 앱에 추가
-app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api")
+
 # '/users/me' 등의 API가 포함된 users.py 라우터를 앱에 추가
-app.include_router(users.router)
-app.include_router(fatigue.router)
+app.include_router(users.router, prefix="/api")
+
+# fatigue 라우터도 API에 포함된다면
+app.include_router(fatigue.router, prefix="/api")
 
 # --- 기본 API ---
 @app.get("/")
