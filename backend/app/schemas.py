@@ -25,7 +25,7 @@ class Token(BaseModel):
 # --- 진단 기록 관련 스키마 ---
 
 class EyeData(BaseModel):
-    """눈 피로도 기록 생성을 위한 요청 스키마 (AI -> 백엔드)"""
+    """(AI 연동 전) 임시 입력 스키마"""
     blink_speed: float
     iris_dilation: float
     eye_movement_pattern: str
@@ -37,7 +37,7 @@ class FatigueResult(BaseModel):
     fatigue_grade: str
     created_at: datetime
 
-    # 👇 [수정] 500 오류 해결을 위해 Config 클래스를 추가합니다!
+    # 👇 [수정] Config 클래스를 여기에 추가합니다!
     class Config:
         from_attributes = True
 
@@ -50,7 +50,10 @@ class Record(BaseModel):
     iris_dilation: float
     eye_movement_pattern: str
     created_at: datetime
-    status: str | None = None
+    
+    # 👇 "status" 필드가 있는지 확인합니다.
+    status: str | None = None  
 
     class Config:
+        # Pydantic V2 호환을 위해 orm_mode 대신 사용
         from_attributes = True

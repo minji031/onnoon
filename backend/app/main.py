@@ -29,7 +29,9 @@ async def startup_event():
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    # (나중에 여기에 프론트엔드 '라이브 주소'도 추가)
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -40,14 +42,10 @@ app.add_middleware(
 )
 
 # --- 라우터 포함 ---
-# '/register', '/login' 등의 API가 포함된 auth.py 라우터를 앱에 추가
-app.include_router(auth.router, prefix="/api")
-
-# '/users/me' 등의 API가 포함된 users.py 라우터를 앱에 추가
-app.include_router(users.router, prefix="/api")
-
-# fatigue 라우터도 API에 포함된다면
-app.include_router(fatigue.router, prefix="/api")
+# 👇 [수정] prefix="/api" 부분을 모두 삭제합니다!
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(fatigue.router)
 
 # --- 기본 API ---
 @app.get("/")
@@ -55,4 +53,3 @@ def read_root():
     """서버가 살아있는지 확인하는 기본 경로"""
     logger.info("Root path was accessed.")
     return {"message": "Welcome to the Onnoon-Care API"}
-
