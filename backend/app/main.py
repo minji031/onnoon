@@ -9,7 +9,6 @@ from .routers import auth, users, fatigue
 
 
 # 서버 시작 시 데이터베이스에 테이블 생성
-# (models 폴더의 __init__.py를 통해 모든 모델을 인식)
 Base.metadata.create_all(bind=engine)
 
 # --- FastAPI 앱 설정 ---
@@ -35,7 +34,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"http://localhost(:\d+)?",
+    allow_origin_regex=r"http://localhost(:\d+)?"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
