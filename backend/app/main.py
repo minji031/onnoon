@@ -34,14 +34,16 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"http://localhost(:\d+)?"
+    
+    # 👇 [수정] 이 줄 끝에 쉼표(,)를 추가해야 합니다!
+    allow_origin_regex=r"http://localhost(:\d+)?", 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # --- 라우터 포함 ---
-# 👇 [수정] prefix="/api" 부분을 모두 삭제합니다!
+# [수정] prefix="/api" 부분을 모두 삭제합니다!
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(fatigue.router)
