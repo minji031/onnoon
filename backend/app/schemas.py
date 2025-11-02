@@ -53,3 +53,11 @@ class Record(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FatigueDataInput(BaseModel):
+    """AI가 백엔드로 전송하는 실제 데이터 스키마"""
+    bpm: int
+    max_stable_gaze_time: float
+    health_score: float
+    status: str
