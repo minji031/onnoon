@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from .. import schemas, models, security, database
 
 router = APIRouter(
-    prefix="/api/users", 
+    prefix="/api/users",  # 👈 '/users' -> '/api/users'로 수정!
     tags=['Users']
 )
 
