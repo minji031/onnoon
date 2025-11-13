@@ -10,7 +10,7 @@ from .. import database, schemas, models, security
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/api/auth",  # 👈 '/auth' -> '/api/auth'로 수정!
+    prefix="/api/auth",  # 👈 [수정] 404 오류 해결을 위해 '/api' 추가
     tags=['Authentication']
 )
 
