@@ -6,8 +6,8 @@ from typing import List
 from .. import database, schemas, models, security
 
 router = APIRouter(
-    prefix="/api/fatigue", # prefix 수정: eye-fatigue
-    tags=['Fatigue'] # 태그 이름 수정 (대소문자 일관성)
+    prefix="/api/eye-fatigue",  # 👈 '/api/fatigue' -> '/api/eye-fatigue'로 수정!
+    tags=['Fatigue']
 )
 
 @router.post("/", response_model=schemas.Record, summary="눈 피로도 기록 생성")
@@ -38,7 +38,7 @@ def create_fatigue_record(
         
         # AI가 안 보내는 값 (기본값 0.0으로 채움)
         iris_dilation=0.0
-    )
+    )   
     db.add(db_record)
     db.commit()
     db.refresh(db_record) # DB에서 생성된 id, created_at 등을 포함하여 반환
