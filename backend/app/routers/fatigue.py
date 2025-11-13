@@ -6,13 +6,13 @@ from typing import List
 from .. import database, schemas, models, security
 
 router = APIRouter(
-    prefix="/api/eye-fatigue", # prefix가 /api/eye-fatigue 인지 확인
-    tags=['Fatigue']
+    prefix="/api/fatigue", # prefix 수정: eye-fatigue
+    tags=['Fatigue'] # 태그 이름 수정 (대소문자 일관성)
 )
 
 @router.post("/", response_model=schemas.Record, summary="눈 피로도 기록 생성")
 def create_fatigue_record(
-    data: schemas.EyeData, # AI 연동 전 임시 입력 스키마
+    data: schemas.FatigueDataInput, # AI 연동 전 임시 입력 스키마
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
@@ -20,19 +20,24 @@ def create_fatigue_record(
     (AI 연동 전 임시)
     현재 로그인된 사용자의 눈 피로도 데이터를 계산하고 저장합니다.
     """
-    # 임시 계산 로직
-    fatigue_score = data.blink_speed * 0.5 + data.iris_dilation * 0.3
+    # 임시 계산 로직 (AI 연동 시 변경 필요)
+    # fatigue_score = data.blink_speed * 0.5 + data.iris_dilation * 0.3
 
     # seed.py와 유사하게 status 임시 생성
-    status_text = "양호함 😊" if fatigue_score < 3.5 else "주의 필요 😐"
+    # status_text = "양호함 😊" if fatigue_score < 3.5 else "주의 필요 😐"
 
     db_record = models.EyeFatigueRecord(
         user_id=current_user.id,
-        fatigue_score=fatigue_score,
-        status=status_text, # status 값 추가
-        blink_speed=data.blink_speed,
-        iris_dilation=data.iris_dilation,
-        eye_movement_pattern=data.eye_movement_pattern
+        
+        fatigue_score=data.health_score,  # AI의 health_score -> DB의 fatigue_score
+        status=data.status,             # AI의 status -> DB의 status
+        blink_speed=data.bpm,           # AI의 bpm -> DB의 blink_speed
+        
+        # AI가 보내는 max_stable_gaze_time을 eye_movement_pattern 칸에 저장
+        eye_movement_pattern=f"Gaze_Time: {data.max_stable_gaze_time}",
+        
+        # AI가 안 보내는 값 (기본값 0.0으로 채움)
+        iris_dilation=0.0
     )
     db.add(db_record)
     db.commit()

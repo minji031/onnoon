@@ -41,6 +41,7 @@ class _SignupScreenState extends State<SignupScreen> {
     super.initState();
     // 컨트롤러에 리스너를 추가하여 텍스트 변경을 감지
     _emailController.addListener(() => setState(() {}));
+    _nameController.addListener(() => setState(() {}));
     _passwordController.addListener(_validatePassword);
     _confirmPasswordController.addListener(_validatePassword);
   }
@@ -103,7 +104,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // TODO: UI에 이름 입력 필드를 추가하고 _nameController를 연결해야 합니다. 현재는 임시값 사용.
     final String name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "사용자";
 
-    // --- 1. 수정: API 경로를 가이드에 맞게 변경 ---
+    // --- 1. API 경로를 가이드에 맞게 변경 ---
     final url = Uri.parse('https://onnoon.onrender.com/api/auth/register');
 
     try {
@@ -112,7 +113,7 @@ class _SignupScreenState extends State<SignupScreen> {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        // --- 2. 수정: 요청 본문에 name, email, password 포함 ---
+        // --- 2. 요청 본문에 name, email, password 포함 ---
         body: jsonEncode({
           'name': name,
           'email': email,
@@ -270,31 +271,34 @@ class _SignupScreenState extends State<SignupScreen> {
   // 2. 이메일 입력 페이지 (+이름 입력 추가 필요)
   Widget _buildEmailPage() {
     final email = _emailController.text;
+    final name = _nameController.text;
+
     bool isEmailValid = email.contains('@') && email.contains('.');
-    // TODO: 이름 입력도 유효성 검사에 포함시켜야 합니다.
-    bool canGoNext = isEmailValid; // && _nameController.text.isNotEmpty;
+    bool isNameValid = name.trim().isNotEmpty;
+    bool canGoNext = isEmailValid && isNameValid; 
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('로그인에 사용할\n아이디를 입력해주세요.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text('아이디를 입력해주세요.', 
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 32),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            autofocus: true,
+            // autofocus: true,
             decoration: const InputDecoration(
               labelText: '이메일 (아이디)',
               border: OutlineInputBorder(),
             ),
           ),
-          // --- ⚠️ UI 수정 필요: 이름 입력 필드 추가 ---
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
             keyboardType: TextInputType.name,
+            autofocus: true,
             decoration: const InputDecoration(
               labelText: '이름',
               border: OutlineInputBorder(),

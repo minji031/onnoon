@@ -20,7 +20,7 @@ TEST_USER_PASSWORD = "password123"
 
 # --- 설정값 (튜닝을 위해 이 값을 조정하세요) ---
 # EAR 임계값: 이 값보다 작아지면 눈을 감은 것으로 판단
-EAR_THRESHOLD = 0.25
+EAR_THRESHOLD = 0.30
 # 연속 프레임: EAR 임계값보다 낮은 상태가 이 프레임 수만큼 지속되어야 깜빡임으로 인정
 EAR_CONSEC_FRAMES = 3
 # 시선 임계값: 홍채의 상대적 위치가 이 값보다 작으면 왼쪽, 크면 오른쪽으로 판단

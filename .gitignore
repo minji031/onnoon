@@ -1,7 +1,7 @@
 # Python
 __pycache__/
 *.pyc
-backend/venv/
+backend/.\venv\Scripts\Activate.ps1/
 .env
 
 # Flutter
