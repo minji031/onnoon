@@ -210,7 +210,7 @@ class EyeFatigueMonitor:
             print(f">> 서버 연결 오류 (로그인): {e}")
             return False
 
-    def _send_to_backend(self, data_to_send): # 👈 데이터를 'data_to_send'로 받습니다.
+    def _send_to_backend(self, data_to_send): 
         """분석 결과를 백엔드 서버로 전송합니다."""
         if not self.jwt_token:
             print(">> 경고: JWT 토큰이 없어 서버로 전송할 수 없습니다.")
