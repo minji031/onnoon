@@ -10,7 +10,7 @@ from .. import database, schemas, models, security
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/auth", 
+    prefix="/api/auth",  # 👈 '/auth' -> '/api/auth'로 수정!
     tags=['Authentication']
 )
 
